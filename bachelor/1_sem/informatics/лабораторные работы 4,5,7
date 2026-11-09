@@ -1,1 +1,322 @@
+ЛАБОРАТОРНАЯ НОМЕР 4
+#include <iostream>
+using namespace std;
 
+const int N = 100;               // максимальная длина массива
+
+// индекс элемента, предшествующего i в кольце (движение справа налево)
+int prevIdx(int i, int n)
+{
+    return (i - 1 + n) % n;      // от первого элемента переходим к последнему
+}
+
+// печать кольца, начиная с K-го элемента (K считается с 1) и далее
+// справа налево по кольцу до (K+1)-го элемента
+void printRing(const int a[], int n, int k)
+{
+    if (n == 0)
+    {
+        cout << "Кольцо пусто\n";
+        return;
+    }
+    int i = ((k - 1) % n + n) % n;       // приводим K к номеру в кольце
+    for (int c = 0; c < n; c++)
+    {
+        cout << a[i] << ' ';
+        i = prevIdx(i, n);
+    }
+    cout << '\n';
+}
+
+// добавление нового первого элемента
+bool addFirst(int a[], int &n, int x)
+{
+    if (n >= N) return false;
+    for (int i = n; i > 0; i--) a[i] = a[i - 1];
+    a[0] = x;
+    n++;
+    return true;
+}
+
+// добавление нового последнего элемента
+bool addLast(int a[], int &n, int x)
+{
+    if (n >= N) return false;
+    a[n++] = x;
+    return true;
+}
+
+// удаление из кольца всех нечетных элементов
+void removeOdd(int a[], int &n)
+{
+    int w = 0;
+    for (int i = 0; i < n; i++)
+        if (a[i] % 2 == 0)               // четные (в т.ч. отрицательные) оставляем
+            a[w++] = a[i];
+    n = w;                               // меняем реальную длину массива
+}
+
+int main()
+{
+    int a[N], n, k;
+
+    cout << "Количество элементов кольца (1.." << N << "): ";
+    cin >> n;
+    if (!cin || n < 1 || n > N)
+    {
+        cout << "Ошибка: недопустимая длина массива\n";
+        return 1;
+    }
+    cout << "Введите " << n << " целых чисел: ";
+    for (int i = 0; i < n; i++) cin >> a[i];
+    cout << "Номер K, с которого начинать печать: ";
+    cin >> k;
+    if (!cin || k < 1)
+    {
+        cout << "Ошибка: K должно быть натуральным числом\n";
+        return 1;
+    }
+
+    cout << "\nИсходное кольцо (в порядке записи): ";
+    for (int i = 0; i < n; i++) cout << a[i] << ' ';
+    cout << "\n\n2) Печать с " << k << "-го элемента справа налево по кольцу:\n";
+    printRing(a, n, k);
+
+    int x, y;
+    cout << "\nЗначение нового первого элемента: ";
+    cin >> x;
+    cout << "Значение нового последнего элемента: ";
+    cin >> y;
+    if (!addFirst(a, n, x) || !addLast(a, n, y))
+    {
+        cout << "Ошибка: массив переполнен\n";
+        return 1;
+    }
+    cout << "\n3) Кольцо после добавления первого и последнего элементов:\n";
+    for (int i = 0; i < n; i++) cout << a[i] << ' ';
+    cout << '\n';
+
+    removeOdd(a, n);
+    cout << "\n4) Кольцо после удаления нечетных элементов:\n";
+    for (int i = 0; i < n; i++) cout << a[i] << ' ';
+    cout << '\n';
+
+    cout << "\n5) Печать с " << k << "-го элемента справа налево по кольцу:\n";
+    if (n > 0 && k > n)
+        cout << "(в кольце " << n << " эл., K приведено к номеру "
+             << (k - 1) % n + 1 << ")\n";
+    printRing(a, n, k);
+    return 0;
+}
+ЛАБОРАТОРНАЯ НОМЕР 5
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+const int MAXN = 15;                 // N*N <= 225 символов
+const int MAXLEN = MAXN * MAXN;
+
+// возвращает N, если len = N*N, иначе 0
+int sideOf(int len)
+{
+    for (int n = 1; n <= MAXN; n++)
+        if (n * n == len) return n;
+    return 0;
+}
+
+// строка состоит только из цифр?
+bool onlyDigits(const char s[])
+{
+    for (int i = 0; s[i]; i++)
+        if (s[i] < '0' || s[i] > '9') return false;
+    return true;
+}
+
+// разбиение строки на подстроки длиной n и запись их в строки массива
+void fillMatrix(int a[][MAXN], const char s[], int n)
+{
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            a[i][j] = s[i * n + j] - '0';
+}
+
+void printMatrix(int a[][MAXN], int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++) cout << a[i][j] << ' ';
+        cout << '\n';
+    }
+}
+
+// обмен двух строк массива
+void swapRows(int a[][MAXN], int n, int i, int j)
+{
+    for (int c = 0; c < n; c++)
+    {
+        int t = a[i][c];
+        a[i][c] = a[j][c];
+        a[j][c] = t;
+    }
+}
+
+// строки можно переставлять произвольно, поэтому первый столбец можно
+// расположить строго по возрастанию тогда и только тогда, когда все его
+// элементы (первые цифры подстрок) различны
+bool firstDigitsDistinct(int a[][MAXN], int n)
+{
+    for (int i = 0; i < n; i++)
+        for (int j = i + 1; j < n; j++)
+            if (a[i][0] == a[j][0]) return false;
+    return true;
+}
+
+// упорядочение строк по первому столбцу (метод выбора)
+void sortRows(int a[][MAXN], int n)
+{
+    for (int i = 0; i < n - 1; i++)
+    {
+        int m = i;
+        for (int j = i + 1; j < n; j++)
+            if (a[j][0] < a[m][0]) m = j;
+        if (m != i) swapRows(a, n, i, m);
+    }
+}
+
+int main()
+{
+    char s[MAXLEN + 2];
+    int a[MAXN][MAXN];
+
+    cout << "Введите строку из N*N цифр: ";
+    cin >> s;
+
+    if (!onlyDigits(s))
+    {
+        cout << "Ошибка: строка должна состоять только из цифр\n";
+        return 1;
+    }
+    int n = sideOf((int)strlen(s));
+    if (n == 0)
+    {
+        cout << "Ошибка: длина строки (" << strlen(s)
+             << ") не является квадратом натурального числа (N <= "
+             << MAXN << ")\n";
+        return 1;
+    }
+
+    cout << "N = " << n << "\nМассив при записи подстрок по порядку:\n";
+    fillMatrix(a, s, n);
+    printMatrix(a, n);
+
+    if (firstDigitsDistinct(a, n))
+    {
+        sortRows(a, n);
+        cout << "\nМожно. Расположение строк, при котором первый столбец "
+                "возрастает:\n";
+        printMatrix(a, n);
+    }
+    else
+        cout << "\nНельзя: первые цифры подстрок повторяются, "
+                "строгое возрастание первого столбца невозможно\n";
+    return 0;
+}
+ЛАБОРАТОРНАЯ НОМЕР 7
+#include <iostream>
+#include <cstring>
+#include <cstdarg>
+#include <cmath>
+using namespace std;
+
+// ===================== 7.1 =====================
+
+// а) минимальный элемент массива целых чисел
+int minimum(int n, const int a[])
+{
+    int m = a[0];
+    for (int i = 1; i < n; i++)
+        if (a[i] < m) m = a[i];
+    return m;
+}
+
+// символ-разделитель слов
+bool isSep(char c)
+{
+    return c == ' ' || c == '\t' || c == '.' || c == ',' ||
+           c == ';' || c == ':' || c == '!' || c == '?';
+}
+
+// б) длина самого короткого слова строки (0, если слов нет)
+int minimum(const char s[])
+{
+    int best = 0, len = 0;
+    for (int i = 0; ; i++)
+    {
+        if (s[i] != '\0' && !isSep(s[i]))
+            len++;
+        else
+        {
+            if (len > 0 && (best == 0 || len < best)) best = len;
+            len = 0;
+            if (s[i] == '\0') break;
+        }
+    }
+    return best;
+}
+
+
+// ===================== 7.2 =====================
+
+const double EPS = 1e-9;
+
+// принадлежит ли точка (x, y) окружности радиуса R (центр в точке (0, 0))
+inline bool onCircle(double x, double y, double R)
+{
+    return fabs(sqrt(x * x + y * y) - R) < EPS;
+}
+
+// n - число параметров, следующих за n: сначала радиус R, затем пары x, y.
+// Все параметры должны иметь тип double.
+int belong(int n, ...)
+{
+    va_list args;
+    va_start(args, n);
+    double R = va_arg(args, double);
+    int count = 0;
+    for (int p = 0; p < (n - 1) / 2; p++)
+    {
+        double x = va_arg(args, double);
+        double y = va_arg(args, double);
+        if (onCircle(x, y, R)) count++;
+    }
+    va_end(args);
+    return count;
+}
+
+
+int main()
+{
+    cout << "=== 7.1 ===\n";
+    int x[] = {17, 5, 23, -4, 9, 12, 31};
+    int n = sizeof(x) / sizeof(x[0]);
+    const char text[] = "Programming in C++ is fun and useful.";
+
+    cout << "Массив: ";
+    for (int i = 0; i < n; i++) cout << x[i] << ' ';
+    cout << "\nМинимальный элемент массива: " << minimum(n, x) << '\n';
+
+    cout << "\nСтрока: \"" << text << "\"\n";
+    cout << "Длина самого короткого слова: " << minimum(text) << '\n';
+    
+    cout << "\n=== 7.2 ===\n";
+    cout << "Вызов 1 (3 параметра: R=5, 1 точка): "
+         << belong(3, 5.0, 3.0, 4.0) << '\n';
+
+    cout << "Вызов 2 (9 параметров: R=5, 4 точки): "
+         << belong(9, 5.0, 3.0, 4.0, -3.0, 4.0, 0.0, -5.0, 2.0, 2.0) << '\n';
+
+    cout << "Вызов 3 (11 параметров: R=10, 5 точек): "
+         << belong(11, 10.0, 6.0, 8.0, -8.0, 6.0, 0.0, 10.0, 5.0, 5.0, 10.0, 0.0)
+         << '\n';
+    return 0;
+}
